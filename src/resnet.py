@@ -14,6 +14,26 @@ def conv1x1(out_planes, strides=1, dilation=1):
                          padding="same", use_bias=False, dilation_rate=dilation, kernel_initializer='he_normal')
 
 
+def basic_block(planes, strides, downsample=None, base_width=64, dilation=1, norm=None):
+    def basic_block_in(x):
+        if norm is None:
+            norm_layer = layers.BatchNormalization
+        if base_width != 64:
+            raise ValueError('BasicBlock only supports base_width=64')
+        if dilation > 1:
+            raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
+        identity = x
+        residual = layers.ReLU()(norm_layer()(conv3x3(planes, strides)(x)))
+        out = norm_layer()(conv3x3(planes)(residual))
+        if downsample is not None:
+            identity = downsample(x)
+
+        out += identity
+        out = layers.ReLU()(out)
+
+    return basic_block_in
+
+
 class BasicBlock(layers.Layer):
     expansion = 1
 
@@ -51,6 +71,8 @@ class BasicBlock(layers.Layer):
         out = self.relu(out)
 
         return out
+
+
 
 
 class Bottleneck(layers.Layer):
